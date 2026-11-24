@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>Юнит-экономика СТМ — калькулятор</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:#e2e8f0;
+    --red:#dc2626; --orange:#ea580c; --yellow:#ca8a04; --green:#16a34a; --accent:#2563eb;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    padding-bottom:30px;}
+  .wrap{max-width:680px; margin:0 auto; padding:0 12px}
+
+  .topbar{position:sticky; top:0; z-index:30; background:#0f172a; color:#fff;
+    padding:9px 14px; display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .topbar .t{font-size:11px; letter-spacing:.07em; text-transform:uppercase; opacity:.6}
+  .topbar .p{font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1.15}
+  .topbar .r{text-align:right; font-size:11px; opacity:.6}
+
+  .tabs{position:sticky; top:56px; z-index:25; background:#0f172a; display:flex; gap:2px;
+    padding:0 8px 8px; overflow-x:auto; scrollbar-width:none}
+  .tabs::-webkit-scrollbar{display:none}
+  .tabs button{flex:1 0 auto; font:inherit; font-size:12.5px; font-weight:600; padding:8px 11px;
+    border-radius:9px; border:0; background:rgba(255,255,255,.08); color:rgba(255,255,255,.72); white-space:nowrap}
+  .tabs button.on{background:#fff; color:#0f172a}
+
+  h1{font-size:17px; margin:16px 0 3px; letter-spacing:-.01em}
+  .sub{color:var(--muted); font-size:12.5px; margin:0 0 14px}
+
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:13px; margin-bottom:11px}
+  .card h2{font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted);
+    margin:0 0 10px; font-weight:600; display:flex; justify-content:space-between; align-items:center; gap:8px}
+
+  .row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:5px 0}
+  .row label{font-size:14px; flex:1; line-height:1.25}
+  .row .hint{display:block; font-size:11px; color:var(--muted); margin-top:1px}
+  .inp{position:relative; flex:0 0 104px}
+  .inp input{width:100%; text-align:right; font:inherit; font-size:14.5px; font-weight:600;
+    font-variant-numeric:tabular-nums; padding:8px 26px 8px 8px; border:1px solid var(--line);
+    border-radius:8px; background:#fbfcfe; color:var(--ink); outline:none}
+  .inp input:focus{border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+  .inp .unit{position:absolute; right:8px; top:50%; transform:translateY(-50%); font-size:11.5px; color:var(--muted); pointer-events:none}
+
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th{text-align:left; font-weight:600; color:var(--muted); font-size:10.5px; text-transform:uppercase;
+    letter-spacing:.05em; padding:5px 3px; border-bottom:1px solid var(--line); white-space:nowrap}
+  td{padding:6px 3px; border-bottom:1px solid #f1f5f9; font-variant-numeric:tabular-nums; vertical-align:middle}
+  td.n,th.n{text-align:right}
+  td input{width:100%; text-align:right; font:inherit; font-size:13.5px; font-weight:600;
+    font-variant-numeric:tabular-nums; padding:6px 6px; border:1px solid var(--line); border-radius:7px;
+    background:#fbfcfe; outline:none}
+  td input:focus{border-color:var(--accent); background:#fff}
+  td input.name{text-align:left; font-weight:500}
+  .chname{font-weight:600; font-size:12.5px; white-space:nowrap}
+
+  .chip{display:inline-block; font-size:10.5px; font-weight:700; padding:2px 7px; border-radius:99px; white-space:nowrap}
+  .pos{color:var(--green); background:#f0fdf4}
+  .neg{color:var(--red); background:#fef2f2}
+  .mid{color:var(--orange); background:#fff7ed}
+  .warn{color:var(--yellow); background:#fefce8}
+  .muted{color:var(--muted)}
+  .small{font-size:11.5px}
+
+  .kv{display:flex; justify-content:space-between; gap:10px; padding:6px 0; border-bottom:1px dashed var(--line); font-size:13.5px}
+  .kv:last-child{border-bottom:0}
+  .kv b{font-variant-numeric:tabular-nums; white-space:nowrap}
+  .kv.total{border-top:2px solid var(--ink); border-bottom:0; margin-top:4px; padding-top:9px; font-size:15px; font-weight:700}
+
+  .wf{margin-top:10px}
+  .wf .item{margin-bottom:7px}
+  .wf .top{display:flex; justify-content:space-between; font-size:12px; margin-bottom:2px; gap:8px}
+  .wf .track{height:5px; background:#eef2f7; border-radius:99px; overflow:hidden}
+  .wf .fill{height:100%; border-radius:99px}
+
+  .btns{display:flex; gap:7px; margin:10px 0}
+  button{font:inherit; font-size:14px; font-weight:600; border-radius:10px; padding:10px 13px;
+    border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff; flex:1}
+  button.tiny{font-size:12px; padding:6px 10px}
+  button:active{transform:scale(.985)}
+
+  .emp{border:1px solid var(--line); border-radius:12px; padding:11px; margin-bottom:9px; background:#fff}
+  .emp .hd{display:flex; gap:8px; align-items:center; margin-bottom:8px}
+  .emp .hd input{flex:1; font:inherit; font-weight:600; font-size:14px; padding:7px 9px;
+    border:1px solid var(--line); border-radius:8px; background:#fbfcfe; outline:none}
+  .emp .grid{display:grid; grid-template-columns:1fr 1fr; gap:7px}
+  .emp .f{font-size:11px; color:var(--muted); margin-bottom:1px}
+  .emp .f input,.emp .f select{width:100%; font:inherit; font-size:13.5px; font-weight:600; padding:7px 8px;
+    border:1px solid var(--line); border-radius:8px; background:#fbfcfe; outline:none; color:var(--ink)}
+  .emp .metrics{margin-top:9px; padding-top:9px; border-top:1px dashed var(--line); font-size:12.5px}
+  .emp .metrics .m{display:flex; justify-content:space-between; gap:8px; padding:2px 0}
+
+  details{margin-top:4px}
+  summary{cursor:pointer; font-size:13px; color:var(--accent); font-weight:600; padding:7px 0; list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"▸ "; font-size:11px}
+  details[open] summary:before{content:"▾ "}
+  details p, details li{font-size:12.5px; color:#475569; line-height:1.5}
+  details ul{padding-left:16px; margin:5px 0}
+
+  .diag{border-left:3px solid var(--red); padding:9px 11px; background:#fef2f2; border-radius:0 9px 9px 0; font-size:13px; margin-bottom:8px}
+  .diag.ok{border-color:var(--green); background:#f0fdf4}
+  .diag.warn{border-color:var(--yellow); background:#fefce8}
+  .diag b{display:block; margin-bottom:2px}
+
+  .foot{text-align:center; font-size:11px; color:#94a3b8; margin-top:18px; line-height:1.5}
+  @media (max-width:430px){
+    td input{font-size:12.5px; padding:5px 4px}
+    th{font-size:9.5px}
+    table{font-size:12px}
+    .tabs button{font-size:11.5px; padding:7px 9px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="t">Прибыль в месяц</div>
+    <div class="p" id="tbProfit">—</div>
+  </div>
+  <div class="r">
+    <div id="tbRev">—</div>
+    <div>выручка</div>
+  </div>
+</div>
+<nav class="tabs" id="tabs"></nav>
+<main class="wrap" id="view"></main>
+<script>
+(function(){
+"use strict";
+
+/* ---------- справочники ---------- */
+var CHANNELS = [
+  {id:'mp', name:'Маркетплейсы', short:'МП', fields:[
+    {k:'commission', l:'Комиссия МП', u:'%', cat:'comm'},
+    {k:'logistics',  l:'Логистика и последняя миля', u:'\u20bd', cat:'log', per:'unit'},
+    {k:'storage',    l:'Хранение, приёмка, утилизация', u:'\u20bd', cat:'stor', per:'unit'},
+    {k:'returns',    l:'Возвраты и списания', u:'%', cat:'ret'},
+    {k:'ads',        l:'Реклама (ДРР)', u:'%', cat:'ads'},
+    {k:'acquiring',  l:'Эквайринг', u:'%', cat:'acq'},
+    {k:'tax',        l:'Налог с оборота', u:'%', cat:'tax'}
+  ]},
+  {id:'site', name:'Свой сайт', short:'Сайт', fields:[
+    {k:'commission', l:'Комиссия платформы', u:'%', cat:'comm'},
+    {k:'logistics',  l:'Доставка клиенту', u:'\u20bd', cat:'log', per:'unit'},
+    {k:'returns',    l:'Возвраты', u:'%', cat:'ret'},
+    {k:'ads',        l:'Реклама и трафик (ДРР)', u:'%', cat:'ads'},
+    {k:'acquiring',  l:'Эквайринг', u:'%', cat:'acq'},
+    {k:'tax',        l:'Налог с оборота', u:'%', cat:'tax'}
+  ]},
+  {id:'opt', name:'Опт', short:'Опт', fields:[
+    {k:'bonus',      l:'Ретро-бонус, скидка', u:'%', cat:'bonus'},
+    {k:'logistics',  l:'Доставка до клиента', u:'\u20bd', cat:'log', per:'unit'},
+    {k:'returns',    l:'Возвраты', u:'%', cat:'ret'},
+    {k:'tax',        l:'Налог с оборота', u:'%', cat:'tax'}
+  ]},
+  {id:'net', name:'Сетевые магазины', short:'Сети', fields:[
+    {k:'bonus',      l:'Ретро-бонус', u:'%', cat:'bonus'},
+    {k:'logistics',  l:'Доставка на РЦ', u:'\u20bd', cat:'log', per:'unit'},
+    {k:'returns',    l:'Возвраты', u:'%', cat:'ret'},
+    {k:'fines',      l:'Штрафы, промо-поддержка', u:'%', cat:'fines'},
+    {k:'tax',        l:'Налог с оборота', u:'%', cat:'tax'}
+  ]}
+];
+
+var CAT_LABEL = {comm:'Комиссии', log:'Логистика', stor:'Хранение', ret:'Возвраты и списания',
+  bonus:'Ретро-бонусы', fines:'Штрафы и промо', ads:'Реклама', acq:'Эквайринг', tax:'Налоги',
+  cogs:'Себестоимость'};
+
+var DEPTS = [{id:'mp',n:'Маркетплейсы'},{id:'site',n:'Свой сайт'},{id:'opt',n:'Опт'},
+  {id:'net',n:'Сети'},{id:'shared',n:'Общее'}];
+
+var TYPES = [{id:'revenue',n:'Приносит выручку'},{id:'support',n:'Поддержка'},
+  {id:'mgmt',n:'Управление'}];
+
+function ch(id){ for(var i=0;i<CHANNELS.length;i++) if(CHANNELS[i].id===id) return CHANNELS[i]; return null; }
+function deptName(id){ for(var i=0;i<DEPTS.length;i++) if(DEPTS[i].id===id) return DEPTS[i].n; return id; }
+
+/* ---------- стартовые данные (пример) ---------- */
+function seed(){
+  return {
+    tabs: 'skus',
+    ch: {
+      mp:   {commission:'19', logistics:'95', storage:'15', returns:'8', ads:'26', acquiring:'0', tax:'6'},
+      site: {commission:'0',  logistics:'280', returns:'4', ads:'18', acquiring:'2,5', tax:'6'},
+      opt:  {bonus:'5', logistics:'0', returns:'1', tax:'6'},
+      net:  {bonus:'12', logistics:'38', returns:'1', fines:'3', tax:'6'}
+    },
+    fee: {mp:'0', site:'0', opt:'0', net:'0'},
+    skus: [
+      {id:1, name:'Крем для лица 50 мл', cogs:'180', pack:'45',
+        p:{mp:{p:'890',u:'2280'}, site:{p:'1290',u:'342'}, opt:{p:'560',u:'1140'}, net:{p:'480',u:'1710'}}},
+      {id:2, name:'Сыворотка 30 мл', cogs:'140', pack:'40',
+        p:{mp:{p:'750',u:'1710'}, site:{p:'1090',u:'228'}, opt:{p:'470',u:'712'}, net:{p:'410',u:'1140'}}},
+      {id:3, name:'Шампунь 300 мл', cogs:'95', pack:'35',
+        p:{mp:{p:'590',u:'1995'}, site:{p:'',u:''}, opt:{p:'330',u:'1425'}, net:{p:'300',u:'2280'}}}
+    ],
+    team: [
+      {id:1, role:'Директор / владелец', salary:'180000', tax:'30', qty:'1', dept:'shared', type:'mgmt'},
+      {id:2, role:'Маркетолог', salary:'140000', tax:'30', qty:'1', dept:'shared', type:'revenue'},
+      {id:3, role:'Менеджер маркетплейсов', salary:'110000', tax:'30', qty:'1', dept:'mp', type:'revenue'},
+      {id:4, role:'Категорийный менеджер', salary:'100000', tax:'30', qty:'1', dept:'shared', type:'revenue'},
+      {id:5, role:'Менеджер опта и сетей', salary:'120000', tax:'30', qty:'1', dept:'shared', type:'revenue'},
+      {id:6, role:'Контент, дизайн, съёмка', salary:'90000', tax:'30', qty:'1', dept:'shared', type:'support'},
+      {id:7, role:'Поддержка клиентов, SMM', salary:'70000', tax:'30', qty:'1', dept:'site', type:'revenue'},
+      {id:8, role:'Кладовщик', salary:'80000', tax:'30', qty:'1', dept:'shared', type:'support'},
+      {id:9, role:'Сборщик заказов', salary:'65000', tax:'30', qty:'2', dept:'shared', type:'support'},
+      {id:10, role:'Бухгалтер (аутсорс)', salary:'35000', tax:'0', qty:'1', dept:'shared', type:'support'}
+    ],
+    other: [
+      {id:1, name:'Аренда склада и офиса', sum:'600000'},
+      {id:2, name:'Разработка формул, сертификация, дизайн', sum:'500000'},
+      {id:3, name:'Свой склад и фулфилмент', sum:'400000'},
+      {id:4, name:'Проценты по кредитам и займам', sum:'800000'},
+      {id:5, name:'IT, сервисы, аналитика', sum:'300000'},
+      {id:6, name:'Прочее (юристы, командировки)', sum:'500000'}
+    ],
+    fact: '-3000000',
+    growth: {cnt:'5', cm3:'150', units:'300', extra:'250000'}
+  };
+}
+
+/* ---------- состояние ---------- */
+var S = load() || seed();
+var uid = 100;
+function nextId(){ return ++uid; }
+
+function save(){ try{ localStorage.setItem('ue2', JSON.stringify(S)); }catch(e){} }
+function load(){ try{ var s = localStorage.getItem('ue2'); return s ? JSON.parse(s) : null; }catch(e){ return null; } }
+
+/* ---------- утилиты ---------- */
+function num(v){
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  var s = String(v==null?'':v).replace(/\u2212/g,'-').replace(/\s|\u00a0/g,'').replace(',','.').replace(/[^0-9.\-]/g,'');
+  var n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+function fmt(n,d){
+  d = d||0;
+  return new Intl.NumberFormat('ru-RU',{minimumFractionDigits:d, maximumFractionDigits:d}).format(n);
+}
+function money(n){ return fmt(Math.round(n)) + ' \u20bd'; }
+function signed(n){ return (n>0?'+':(n<0?'\u2212':'')) + fmt(Math.abs(Math.round(n))) + ' \u20bd'; }
+function pct(n,d){ return fmt(n, d===undefined?1:d) + '%'; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+function tone(v){ return v<0 ? 'neg' : (v<0.10 ? 'mid' : (v<0.15 ? 'warn' : 'pos')); }
+
+/* ---------- модель: юнит-экономика ---------- */
+function unit(sku, chId){
+  var cfg = S.ch[chId], pr = sku.p[chId];
+  if (!cfg || !pr) return null;
+  var price = num(pr.p), units = num(pr.u);
+  if (price <= 0 || units <= 0) return null;
+  var c = ch(chId), br = [], rateSum = 0, fixSum = 0;
+  c.fields.forEach(function(f){
+    var v = num(cfg[f.k]);
+    if (!v) return;
+    var amount = (f.u === '%') ? price*v/100 : v;
+    if (f.u === '%') rateSum += v/100; else fixSum += v;
+    br.push({cat:f.cat, label:f.l, amount:amount});
+  });
+  var cogs = num(sku.cogs) + num(sku.pack);
+  var deduct = 0;
+  br.forEach(function(b){ deduct += b.amount; });
+  var cm3 = price - deduct - cogs;
+  return {ch:chId, price:price, units:units, br:br, rateSum:rateSum, fixSum:fixSum,
+    cogs:cogs, cm3:cm3, pct: cm3/price, revenue: price*units, month: cm3*units};
+}
+
+function lever(u, target){
+  target = target || 0.15;
+  var den = 1 - u.rateSum - target;
+  var priceNeeded = den > 0 ? (u.fixSum + u.cogs)/den : null;
+  var cogsMax = u.price*(1 - u.rateSum) - u.fixSum - target*u.price;
+  var adsRate = num(S.ch[u.ch].ads)/100;
+  var maxAds = null;
+  if (u.ch === 'mp' || u.ch === 'site'){
+    var base = 1 - (u.rateSum - adsRate) - (u.fixSum + u.cogs)/u.price;
+    maxAds = base*100;
+  }
+  return {priceNeeded:priceNeeded, cogsMax:cogsMax, maxAds:maxAds};
+}
+
+/* ---------- модель: портфель и P&L ---------- */
+function portfolio(){
+  var res = {};
+  CHANNELS.forEach(function(c){ res[c.id] = {rev:0, cm3:0, units:0, by:{} }; });
+  S.skus.forEach(function(sku){
+    CHANNELS.forEach(function(c){
+      var u = unit(sku, c.id);
+      if (!u) return;
+      var r = res[c.id];
+      r.rev += u.revenue; r.cm3 += u.month; r.units += u.units;
+      u.br.forEach(function(b){
+        if (!r.by[b.cat]) r.by[b.cat] = 0;
+        r.by[b.cat] += b.amount*u.units;
+      });
+      if (!r.by.cogs) r.by.cogs = 0;
+      r.by.cogs += u.cogs*u.units;
+    });
+  });
+  return res;
+}
+
+function teamCost(e){ return num(e.salary)*(1 + num(e.tax)/100)*num(e.qty); }
+
+function team(){
+  var total = 0, byDept = {}, headsByDept = {};
+  DEPTS.forEach(function(d){ byDept[d.id] = 0; headsByDept[d.id] = 0; });
+  S.team.forEach(function(e){
+    var c = teamCost(e), q = num(e.qty);
+    total += c;
+    if (!byDept[e.dept]) byDept[e.dept] = 0;
+    if (!headsByDept[e.dept]) headsByDept[e.dept] = 0;
+    byDept[e.dept] += c; headsByDept[e.dept] += q;
+  });
+  return {total:total, byDept:byDept, heads:headsByDept};
+}
+
+function pl(){
+  var pf = portfolio(), tm = team();
+  var rev = 0, cm3 = 0, fees = 0;
+  CHANNELS.forEach(function(c){ rev += pf[c.id].rev; cm3 += pf[c.id].cm3; fees += num(S.fee[c.id]); });
+  var other = 0;
+  S.other.forEach(function(o){ other += num(o.sum); });
+  var profit = cm3 - tm.total - other - fees;
+  return {pf:pf, team:tm, rev:rev, cm3:cm3, fees:fees, other:other,
+    profit:profit, margin: rev>0 ? cm3/rev : 0,
+    fixed: tm.total + other + fees};
+}
+
+/* ---------- рендер: каркас ---------- */
+var TABS = [
+  {id:'skus', n:'Товары'},
+  {id:'chans', n:'Каналы'},
+  {id:'team', n:'Команда'},
+  {id:'pl', n:'Итог'},
+  {id:'growth', n:'Рост'}
+];
+
+function renderTabs(){
+  var h = '';
+  TABS.forEach(function(t){
+    h += '<button data-act="tab" data-tab="' + t.id + '"' + (S.tab===t.id?' class="on"':'') + '>' + t.n + '</button>';
+  });
+  h += '<button data-act="reset" title="Сбросить" style="flex:0 0 auto;padding:8px 10px">\u27f2</button>';
+  document.getElementById('tabs').innerHTML = h;
+}
+
+function unitTD(i, c, pr){
+  var cell = '<td class="n"><input data-bind="sku:' + i + ':' + c.id + ':p" inputmode="decimal" value="' + esc(pr.p||'') + '"></td>' +
+             '<td class="n"><input data-bind="sku:' + i + ':' + c.id + ':u" inputmode="decimal" value="' + esc(pr.u||'') + '"></td>' +
+             '<td class="n" id="m-' + i + '-' + c.id + '">—</td>' +
+             '<td class="n" id="p-' + i + '-' + c.id + '">—</td>';
+  return cell;
+}
+
+function renderSkus(){
+  var h = '<h1>Товары и каналы</h1>' +
+    '<p class="sub">Один товар может продаваться в четырёх каналах по разной цене. Пустая цена или количество = канала нет. <b>Цифры в полях — пример</b>, кнопка ⟲ сверху возвращает его.</p>';
+
+  S.skus.forEach(function(sku){
+    h += '<div class="card">' +
+      '<h2><span>SKU</span><button class="tiny" data-act="delSku" data-id="' + sku.id + '">удалить</button></h2>' +
+      '<div style="margin-bottom:8px"><input class="name" data-bind="sku:' + sku.id + ':name" value="' + esc(sku.name) + '" style="width:100%;font:inherit;font-weight:600;padding:8px 9px;border:1px solid var(--line);border-radius:8px;background:#fbfcfe;outline:none"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px">' +
+        '<div><div class="small muted">Закупка, ₽</div><input data-bind="sku:' + sku.id + ':cogs" inputmode="decimal" value="' + esc(sku.cogs) + '" style="width:100%;font:inherit;font-weight:600;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:#fbfcfe;outline:none"></div>' +
+        '<div><div class="small muted">Упаковка, ₽</div><input data-bind="sku:' + sku.id + ':pack" inputmode="decimal" value="' + esc(sku.pack) + '" style="width:100%;font:inherit;font-weight:600;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:#fbfcfe;outline:none"></div>' +
+      '</div>' +
+      '<table style="table-layout:fixed"><colgroup><col style="width:25%"><col style="width:23%"><col style="width:20%"><col style="width:19%"><col style="width:13%"></colgroup>' +
+      '<thead><tr><th>Канал</th><th class="n">Цена</th><th class="n">Шт/мес</th><th class="n">Маржа</th><th class="n">%</th></tr></thead><tbody>';
+
+    CHANNELS.forEach(function(c){
+      var pr = sku.p[c.id] || {p:'',u:''};
+      h += '<tr><td class="chname">' + c.short + '</td>' + unitTD(sku.id, c, pr) + '</tr>';
+    });
+
+    h += '</tbody></table>' +
+      '<div id="sku-foot-' + sku.id + '" style="margin-top:9px"></div>' +
+      '<details><summary>Что изменить в каналах</summary><div id="levers-' + sku.id + '"></div></details>' +
+      '</div>';
+  });
+
+  h += '<div class="btns"><button class="primary" data-act="addSku">+ Добавить товар</button></div>';
+  document.getElementById('view').innerHTML = h;
+}
+
+function renderChans(){
+  var h = '<h1>Экономика каналов</h1>' +
+    '<p class="sub">Ставки и сборы по каждому каналу. Это общие условия — они применяются ко всем товарам.</p>';
+
+  CHANNELS.forEach(function(c){
+    var cfg = S.ch[c.id];
+    h += '<div class="card"><h2>' + c.name + '</h2>';
+    c.fields.forEach(function(f){
+      h += '<div class="row"><label>' + f.l + '</label>' +
+        '<div class="inp"><input data-bind="ch:' + c.id + ':' + f.k + '" inputmode="decimal" value="' + esc(cfg[f.k]||'') + '"><span class="unit">' + (f.u==='%'?'%':'₽') + '</span></div></div>';
+    });
+    h += '<div class="row"><label>Прочие расходы на канал<span class="hint">входной билет сети, подписки — в месяц</span></label>' +
+      '<div class="inp"><input data-bind="fee:' + c.id + '" inputmode="decimal" value="' + esc(S.fee[c.id]||'') + '"><span class="unit">₽</span></div></div>';
+    h += '<div id="chsum-' + c.id + '" style="margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)"></div>';
+    h += '</div>';
+  });
+
+  document.getElementById('view').innerHTML = h;
+}
+
+function renderTeam(){
+  var h = '<h1>Команда и ФОТ</h1>' +
+    '<p class="sub">Каждая строка — одна должность. Считается полная стоимость с взносами и окупаемость.</p>';
+  h += '<div class="card" id="team-sum"></div>';
+
+  S.team.forEach(function(e){
+    h += '<div class="emp">' +
+      '<div class="hd"><input data-bind="emp:' + e.id + ':role" value="' + esc(e.role) + '">' +
+      '<button class="tiny" data-act="delEmp" data-id="' + e.id + '">×</button></div>' +
+      '<div class="grid">' +
+        '<div class="f">Оклад, ₽/мес<input data-bind="emp:' + e.id + ':salary" inputmode="decimal" value="' + esc(e.salary) + '"></div>' +
+        '<div class="f">Человек<input data-bind="emp:' + e.id + ':qty" inputmode="decimal" value="' + esc(e.qty) + '"></div>' +
+        '<div class="f">Взносы, %<input data-bind="emp:' + e.id + ':tax" inputmode="decimal" value="' + esc(e.tax) + '"></div>' +
+        '<div class="f">Направление<select data-bind="emp:' + e.id + ':dept">' + DEPTS.map(function(d){
+          return '<option value="' + d.id + '"' + (e.dept===d.id?' selected':'') + '>' + d.n + '</option>'; }).join('') + '</select></div>' +
+        '<div class="f" style="grid-column:1/-1">Тип роли<select data-bind="emp:' + e.id + ':type">' + TYPES.map(function(t){
+          return '<option value="' + t.id + '"' + (e.type===t.id?' selected':'') + '>' + t.n + '</option>'; }).join('') + '</select></div>' +
+      '</div>' +
+      '<div class="metrics" id="emp-m-' + e.id + '"></div>' +
+      '</div>';
+  });
+
+  h += '<div class="btns"><button class="primary" data-act="addEmp">+ Добавить должность</button></div>';
+  document.getElementById('view').innerHTML = h;
+}
+
+function renderPL(){
+  var h = '<h1>Итог за месяц</h1>' +
+    '<p class="sub">Сводный P&L: все каналы минус ФОТ и постоянные расходы.</p>';
+  h += '<div class="card" id="pl-main"></div>';
+  h += '<div class="card" id="pl-recon"><h2>Сверка с фактом</h2>' + reconInput() + '<div id="recon-out" style="margin-top:8px"></div></div>';
+  h += '<div class="card" id="pl-diag"></div>';
+  h += '<div class="card" id="pl-bep"></div>';
+  h += '<div class="card"><h2>Прочие постоянные расходы</h2><div id="other-list"></div>' +
+       '<div class="btns" style="margin-bottom:2px"><button class="tiny" data-act="addOther">+ Добавить строку</button></div></div>';
+  document.getElementById('view').innerHTML = h;
+  var ol = document.getElementById('other-list');
+  var oh = '';
+  S.other.forEach(function(o){
+    oh += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">' +
+      '<input data-bind="other:' + o.id + ':name" value="' + esc(o.name) + '" style="flex:1;min-width:0;font:inherit;font-size:13.5px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:#fbfcfe;outline:none">' +
+      '<input data-bind="other:' + o.id + ':sum" inputmode="decimal" value="' + esc(o.sum) + '" style="width:104px;text-align:right;font:inherit;font-size:13.5px;font-weight:600;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:#fbfcfe;outline:none">' +
+      '<button class="tiny" data-act="delOther" data-id="' + o.id + '">×</button></div>';
+  });
+  ol.innerHTML = oh;
+}
+
+function renderGrowth(){
+  var g = S.growth;
+  var h = '<h1>Стоит ли расширять ассортимент</h1>' +
+    '<p class="sub">Расширение помогает, только если новый товар приносит маржи больше, чем добавляет расходов.</p>';
+  h += '<div class="card"><h2>Новые товары</h2>' +
+    '<div class="row"><label>Сколько новых SKU</label><div class="inp"><input data-bind="growth:cnt" inputmode="decimal" value="' + esc(g.cnt) + '"><span class="unit">шт</span></div></div>' +
+    '<div class="row"><label>Средняя маржа на единицу<span class="hint">прибыль до постоянных расходов</span></label><div class="inp"><input data-bind="growth:cm3" inputmode="decimal" value="' + esc(g.cm3) + '"><span class="unit">₽</span></div></div>' +
+    '<div class="row"><label>Продаж на SKU в месяц</label><div class="inp"><input data-bind="growth:units" inputmode="decimal" value="' + esc(g.units) + '"><span class="unit">шт</span></div></div>' +
+    '<div class="row"><label>Доп. расходы на них<span class="hint">люди, реклама, склад — в месяц</span></label><div class="inp"><input data-bind="growth:extra" inputmode="decimal" value="' + esc(g.extra) + '"><span class="unit">₽</span></div></div>' +
+    '<div id="growth-res" style="margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)"></div></div>';
+  h += '<div class="card"><h2>Правило</h2>' +
+    '<p class="small muted" style="margin:0 0 8px">Новый SKU имеет смысл, если его маржа за месяц больше прироста постоянных расходов. Если маржа на единицу отрицательная — каждый новый товар увеличивает убыток, а не уменьшает.</p>' +
+    '<p class="small muted" style="margin:0">Расширение ассортимента не лечит убыток от отрицательной маржи и раздутых постоянных расходов. Оно их умножает.</p></div>';
+  document.getElementById('view').innerHTML = h;
+}
+
+/* ---------- распределение постоянных расходов по каналам ---------- */
+function channelPL(P){
+  var out = {}, shared = P.team.byDept.shared || 0;
+  CHANNELS.forEach(function(c){
+    var share = P.rev > 0 ? P.pf[c.id].rev / P.rev : 0;
+    var direct = P.team.byDept[c.id] || 0;
+    var allocFot = shared * share;
+    var allocOther = P.other * share;
+    var fee = num(S.fee[c.id]);
+    out[c.id] = {rev:P.pf[c.id].rev, cm3:P.pf[c.id].cm3, share:share, direct:direct,
+      allocFot:allocFot, allocOther:allocOther, fee:fee,
+      profit:P.pf[c.id].cm3 - direct - allocFot - allocOther - fee};
+  });
+  return out;
+}
+
+/* ---------- обновление чисел ---------- */
+function refresh(){
+  var P = pl();
+  var tp = document.getElementById('tbProfit');
+  if (tp){
+    tp.textContent = signed(P.profit);
+    tp.style.color = P.profit >= 0 ? '#4ade80' : '#f87171';
+    document.getElementById('tbRev').textContent = money(P.rev);
+  }
+  if (S.tab === 'skus') refreshSkus();
+  else if (S.tab === 'chans') refreshChans(P);
+  else if (S.tab === 'team') refreshTeam(P);
+  else if (S.tab === 'pl') refreshPL(P);
+  else if (S.tab === 'growth') refreshGrowth(P);
+}
+
+function refreshSkus(){
+  S.skus.forEach(function(sku){
+    var trev = 0, tcm = 0, tunits = 0, lev = '';
+    CHANNELS.forEach(function(c){
+      var mEl = document.getElementById('m-' + sku.id + '-' + c.id);
+      var pEl = document.getElementById('p-' + sku.id + '-' + c.id);
+      if (!mEl) return;
+      var u = unit(sku, c.id);
+      if (!u){
+        mEl.innerHTML = '<span class="muted">—</span>';
+        pEl.innerHTML = '<span class="muted">—</span>';
+        return;
+      }
+      trev += u.revenue; tcm += u.month; tunits += u.units;
+      var cls = u.cm3 < 0 ? 'neg' : (u.pct < 0.10 ? 'mid' : 'pos');
+      mEl.innerHTML = '<span class="' + cls + '" style="font-weight:700">' + signed(u.cm3) + '</span>';
+      pEl.innerHTML = '<span class="' + cls + '" style="font-weight:700">' + pct(u.pct*100, 0) + '</span>';
+      var L = lever(u);
+      lev += '<div class="kv"><span>' + c.name + '</span><b>' +
+        'цена ≥ ' + (L.priceNeeded !== null ? money(L.priceNeeded) : '—') +
+        ' · закупка ≤ ' + money(Math.max(0, L.cogsMax)) +
+        (L.maxAds !== null ? ' · ДРР ≤ ' + pct(Math.max(0, L.maxAds), 0) : '') + '</b></div>';
+    });
+    var f = document.getElementById('sku-foot-' + sku.id);
+    if (f) f.innerHTML =
+      '<div class="kv"><span>Выручка по товару</span><b>' + money(trev) + '</b></div>' +
+      '<div class="kv"><span>Маржа за месяц</span><b class="' + (tcm < 0 ? 'neg' : 'pos') + '">' + signed(tcm) + '</b></div>' +
+      '<div class="kv"><span>Продаж всего</span><b>' + fmt(tunits) + ' шт</b></div>';
+    var lv = document.getElementById('levers-' + sku.id);
+    if (lv) lv.innerHTML = lev || '<p class="muted small">Нет активных каналов.</p>';
+  });
+}
+
+function refreshChans(P){
+  var cp = channelPL(P);
+  CHANNELS.forEach(function(c){
+    var box = document.getElementById('chsum-' + c.id);
+    if (!box) return;
+    var d = cp[c.id];
+    if (d.rev <= 0){ box.innerHTML = '<span class="muted small">Нет продаж в этом канале</span>'; return; }
+    box.innerHTML =
+      '<div class="kv"><span>Выручка</span><b>' + money(d.rev) + '</b></div>' +
+      '<div class="kv"><span>Маржа после переменных</span><b class="' + (d.cm3 < 0 ? 'neg' : 'pos') + '">' + signed(d.cm3) + ' · ' + pct(d.cm3/d.rev*100) + '</b></div>' +
+      '<div class="kv"><span>ФОТ: прямой / распределённый</span><b>' + money(d.direct) + ' / ' + money(d.allocFot) + '</b></div>' +
+      '<div class="kv"><span>Прочие расходы</span><b>' + money(d.allocOther + d.fee) + '</b></div>' +
+      '<div class="kv total"><span>Прибыль канала</span><b class="' + (d.profit < 0 ? 'neg' : 'pos') + '">' + signed(d.profit) + '</b></div>';
+  });
+}
+
+function refreshTeam(P){
+  var sum = document.getElementById('team-sum');
+  if (sum){
+    var ratio = P.rev > 0 ? P.team.total / P.rev : 0;
+    var heads = 0;
+    S.team.forEach(function(e){ heads += num(e.qty); });
+    var perHead = heads > 0 ? P.rev / heads : 0;
+    var vcls = ratio > 0.25 ? 'neg' : (ratio > 0.2 ? 'mid' : 'pos');
+    var vtxt = ratio > 0.25 ? 'ФОТ слишком тяжёлый для такой выручки'
+             : (ratio > 0.2 ? 'ФОТ выше нормы' : 'ФОТ в пределах нормы');
+    var rows = '';
+    DEPTS.forEach(function(d){
+      if (d.id === 'shared') return;
+      var cm = P.pf[d.id] ? P.pf[d.id].cm3 : 0;
+      var share = (P.rev > 0 && P.pf[d.id]) ? P.pf[d.id].rev / P.rev : 0;
+      var fot = (P.team.byDept[d.id] || 0) + (P.team.byDept.shared || 0) * share;
+      if (fot <= 0 && cm <= 0) return;
+      var cov = fot > 0 ? cm / fot : 9;
+      rows += '<div class="kv"><span>' + d.n + '</span><b class="' + (cov < 1 ? 'neg' : 'pos') + '">' +
+        money(cm) + ' / ' + money(fot) + '</b></div>';
+    });
+    sum.innerHTML = '<h2>Итого по команде</h2>' +
+      '<div class="kv"><span>ФОТ с взносами</span><b>' + money(P.team.total) + '</b></div>' +
+      '<div class="kv"><span>Доля от выручки</span><b class="' + vcls + '">' + pct(ratio*100) + '</b></div>' +
+      '<div class="kv"><span>Выручка на человека</span><b>' + money(perHead) + '</b></div>' +
+      '<div class="kv"><span>Маржа на человека</span><b>' + money(heads > 0 ? P.cm3/heads : 0) + '</b></div>' +
+      '<div style="margin:8px 0 4px" class="chip ' + vcls + '">' + vtxt + '</div>' +
+      (rows ? '<div style="margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)"><div class="small muted" style="margin-bottom:4px">Маржа направления / ФОТ направления с распределением</div>' + rows + '</div>' : '') +
+      '<p class="small muted" style="margin:8px 0 0">Норма ФОТ для торговли: 10-18% от выручки. Выше 20% - либо мало выручки, либо раздут штат.</p>';
+  }
+
+  var flags = [], watch = [];
+  S.team.forEach(function(e){
+    var box = document.getElementById('emp-m-' + e.id);
+    if (!box) return;
+    var cost = teamCost(e), q = Math.max(1, num(e.qty));
+    var dept = e.dept;
+    var deptCM3 = dept === 'shared' ? P.cm3 : (P.pf[dept] ? P.pf[dept].cm3 : 0);
+    var deptHeads = Math.max(1, P.team.heads[dept] || 1);
+    var perHead = deptCM3 / deptHeads;
+    var costPerHead = cost / q;
+    var coverage = costPerHead > 0 ? perHead / costPerHead : 0;
+    var revShare = P.rev > 0 ? cost / P.rev : 0;
+    var rows = '', chip = '';
+
+    if (e.type === 'revenue'){
+      var cls = coverage >= 1 ? 'pos' : (coverage >= 0.6 ? 'mid' : 'neg');
+      var txt = coverage >= 1 ? 'окупает себя' : (coverage >= 0.6 ? 'на грани' : 'не окупает себя');
+      rows = '<div class="m"><span class="muted">Стоимость</span><b>' + money(cost) + '/мес</b></div>' +
+             '<div class="m"><span class="muted">Маржа направления на человека</span><b>' + money(perHead) + '</b></div>' +
+             '<div class="m"><span class="muted">Покрытие</span><b class="' + cls + '">' + pct(coverage*100, 0) + '</b></div>';
+      chip = '<span class="chip ' + cls + '">' + txt + '</span>';
+    } else if (e.type === 'support'){
+      var c2 = revShare > 0.03 ? 'neg' : (revShare > 0.015 ? 'mid' : 'pos');
+      var t2 = revShare > 0.03 ? 'дорого: аутсорс или автоматизация' : (revShare > 0.015 ? 'дорого' : 'в норме');
+      rows = '<div class="m"><span class="muted">Стоимость</span><b>' + money(cost) + '/мес</b></div>' +
+             '<div class="m"><span class="muted">Доля в выручке</span><b class="' + c2 + '">' + pct(revShare*100, 2) + '</b></div>';
+      chip = '<span class="chip ' + c2 + '">' + t2 + '</span>';
+    } else {
+      var fares = P.profit >= 0 ? 'pos' : 'neg';
+      rows = '<div class="m"><span class="muted">Стоимость</span><b>' + money(cost) + '/мес</b></div>' +
+             '<div class="m"><span class="muted">Доля в выручке</span><b>' + pct(revShare*100, 2) + '</b></div>' +
+             '<div class="m"><span class="muted">Результат компании</span><b class="' + fares + '">' + signed(P.profit) + '</b></div>';
+      chip = '<span class="chip ' + fares + '">' + (P.profit >= 0 ? 'компания в прибыли' : 'компания в убытке') + '</span>';
+    }
+    box.innerHTML = rows + '<div style="margin-top:6px">' + chip + '</div>' +
+      (e.type === 'revenue'
+        ? '<div class="m" style="margin-top:4px"><span class="muted small">Чтобы окупить одного: маржа ' + money(costPerHead) + '/мес</span></div>'
+        : '');
+    if (e.type === 'revenue' && coverage < 0.6){
+      flags.push({role:e.role, why:'не окупает себя: покрытие ' + pct(coverage*100, 0), cost:cost});
+    } else if (e.type === 'revenue' && coverage < 1){
+      watch.push({role:e.role, why:'покрытие ' + pct(coverage*100, 0), cost:cost});
+    }
+    if (e.type === 'support' && revShare > 0.03){
+      flags.push({role:e.role, why:'дорого: ' + pct(revShare*100, 2) + ' выручки', cost:cost});
+    } else if (e.type === 'support' && revShare > 0.015){
+      watch.push({role:e.role, why:'доля в выручке ' + pct(revShare*100, 2), cost:cost});
+    }
+  });
+
+  if (sum && (flags.length || watch.length)){
+    var fh = '<div style="margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)">';
+    if (flags.length){
+      fh += '<div class="small muted" style="margin-bottom:6px;color:#b91c1c;font-weight:600">Требуют решения: ' + flags.length + '</div>';
+      flags.forEach(function(f){
+        fh += '<div class="kv"><span><b style="font-weight:600">' + f.role + '</b><br><span class="small muted">' + f.why + '</span></span>' +
+          '<b class="neg">' + money(f.cost) + '</b></div>';
+      });
+      fh += '<p class="small muted" style="margin:6px 0 0">Экономия при сокращении: до ' +
+        money(flags.reduce(function(a,f){ return a + f.cost; }, 0)) + ' в месяц.</p>';
+    }
+    if (watch.length){
+      fh += '<div class="small muted" style="margin:12px 0 6px;color:#a16207;font-weight:600">На грани: ' + watch.length + '</div>';
+      watch.forEach(function(f){
+        fh += '<div class="kv"><span>' + f.role + '<br><span class="small muted">' + f.why + '</span></span>' +
+          '<b>' + money(f.cost) + '</b></div>';
+      });
+    }
+    fh += '</div>';
+    sum.insertAdjacentHTML('beforeend', fh);
+  }
+}
+
+function reconInput(){
+  return '<div class="row"><label>Факт по бухгалтерии<span class="hint">прибыль или убыток за месяц</span></label>' +
+    '<div class="inp"><input data-bind="misc:fact" inputmode="decimal" value="' + esc(S.fact) + '"><span class="unit">₽</span></div></div>';
+}
+
+function refreshPL(P){
+  var main = document.getElementById('pl-main');
+  if (main){
+    main.innerHTML = '<h2>Сводный P&L</h2>' +
+      '<div class="kv"><span>Выручка</span><b>' + money(P.rev) + '</b></div>' +
+      '<div class="kv"><span>Маржа после переменных и себестоимости</span><b class="' + (P.cm3 < 0 ? 'neg' : 'pos') + '">' + signed(P.cm3) + ' · ' + pct(P.margin*100) + '</b></div>' +
+      '<div class="kv"><span>ФОТ с взносами</span><b>−' + money(P.team.total) + '</b></div>' +
+      '<div class="kv"><span>Прочие постоянные</span><b>−' + money(P.other) + '</b></div>' +
+      '<div class="kv"><span>Расходы на каналы</span><b>' + (P.fees > 0 ? '−' : '') + money(P.fees) + '</b></div>' +
+      '<div class="kv total"><span>Прибыль за месяц</span><b class="' + (P.profit < 0 ? 'neg' : 'pos') + '">' + signed(P.profit) + '</b></div>' +
+      waterfall(P);
+  }
+
+  var ro = document.getElementById('recon-out');
+  if (ro){
+    var fact = num(S.fact);
+    var delta = P.profit - fact;
+    var abs = Math.abs(delta);
+    var cls = abs < P.rev*0.03 ? 'ok' : (abs < P.rev*0.08 ? 'warn' : '');
+    var msg = abs < P.rev*0.03
+      ? 'Модель сходится с бухгалтерией. Значит, основные расходы учтены — можно работать с маржой и объёмом.'
+      : 'Расхождение ' + money(abs) + '. Значит, есть расходы, которых нет в модели: списания, штрафы, проценты, зарплаты не из списка, налоги, недостачи. Их надо найти — они тоже часть убытка.';
+    ro.innerHTML = '<div class="kv"><span>Расчёт по модели</span><b>' + signed(P.profit) + '</b></div>' +
+      '<div class="kv"><span>Факт</span><b>' + signed(fact) + '</b></div>' +
+      '<div class="diag ' + cls + '" style="margin-top:8px"><b>Расхождение: ' + money(abs) + '</b>' + msg + '</div>';
+  }
+
+  var dg = document.getElementById('pl-diag');
+  if (dg) dg.innerHTML = '<h2>Диагноз</h2>' + diagnosis(P);
+
+  var bp = document.getElementById('pl-bep');
+  if (bp){
+    var bepRev = P.margin > 0 ? P.fixed / P.margin : null;
+    var gap = bepRev === null ? null : bepRev - P.rev;
+    bp.innerHTML = '<h2>Что нужно, чтобы выйти в ноль</h2>' +
+      (bepRev === null
+        ? '<div class="diag"><b>Маржа отрицательная</b>Выручка не поможет. Сначала нужно сделать маржу положительной: поднять цены или урезать закупку и рекламу.</div>'
+        : '<div class="kv"><span>Нужна выручка</span><b>' + money(bepRev) + '/мес</b></div>' +
+          '<div class="kv"><span>Сейчас</span><b>' + money(P.rev) + '</b></div>' +
+          '<div class="kv"><span>Не хватает</span><b class="' + (gap > 0 ? 'neg' : 'pos') + '">' + signed(gap) + '</b></div>' +
+          '<div class="kv"><span>Это рост выручки на</span><b>' + (P.rev > 0 ? pct(gap/P.rev*100) : '—') + '</b></div>' +
+          '<div class="diag warn" style="margin-top:8px"><b>Второй путь быстрее</b>Снизить постоянные расходы на ' + money(-P.profit) + ' — эффект наступает в первый же месяц, без роста продаж.</div>');
+  }
+}
+
+function waterfall(P){
+  var by = {};
+  CHANNELS.forEach(function(c){
+    var b = P.pf[c.id].by;
+    for (var k in b) if (b.hasOwnProperty(k)) by[k] = (by[k]||0) + b[k];
+  });
+  var order = ['cogs','comm','log','stor','ret','bonus','fines','ads','acq','tax'];
+  var rows = '';
+  order.forEach(function(k){
+    if (!by[k] || by[k] <= 0) return;
+    var w = P.rev > 0 ? Math.min(100, by[k]/P.rev*100) : 0;
+    rows += '<div class="item"><div class="top"><span>' + (CAT_LABEL[k]||k) + '</span><span class="muted">' +
+      money(by[k]) + ' · ' + pct(by[k]/P.rev*100, 0) + '</span></div>' +
+      '<div class="track"><div class="fill" style="width:' + w + '%;background:#94a3b8"></div></div></div>';
+  });
+  var fotW = P.rev > 0 ? Math.min(100, P.team.total/P.rev*100) : 0;
+  var othW = P.rev > 0 ? Math.min(100, P.other/P.rev*100) : 0;
+  rows += '<div class="item"><div class="top"><span>ФОТ</span><span class="muted">' + money(P.team.total) + ' · ' + pct(fotW, 0) + '</span></div>' +
+    '<div class="track"><div class="fill" style="width:' + fotW + '%;background:#f59e0b"></div></div></div>' +
+    '<div class="item"><div class="top"><span>Прочие постоянные</span><span class="muted">' + money(P.other) + ' · ' + pct(othW, 0) + '</span></div>' +
+    '<div class="track"><div class="fill" style="width:' + othW + '%;background:#fb923c"></div></div></div>';
+  return '<div class="wf">' + rows + '</div>';
+}
+
+function diagnosis(P){
+  var out = [];
+  CHANNELS.forEach(function(c){
+    var d = c.id;
+    if (P.pf[d].rev > 0 && P.pf[d].cm3 < 0){
+      out.push({k:'neg', t:'«' + c.name + '»: минус на каждой продаже',
+        d:'Суммарно ' + signed(P.pf[d].cm3) + ' в месяц. Каждый заказ в этом канале увеличивает убыток.'});
+    }
+  });
+  var big = null;
+  CHANNELS.forEach(function(c){ if (!big || P.pf[c.id].rev > P.pf[big].rev) big = c.id; });
+  if (big && P.pf[big].rev > 0 && P.rev > 0){
+    var share = P.pf[big].rev/P.rev;
+    var m = P.pf[big].cm3/P.pf[big].rev;
+    if (share > 0.4 && m < P.margin){
+      out.push({k:'warn', t:'Основной канал съедает маржу',
+        d:ch(big).name + ' — ' + pct(share*100, 0) + ' выручки, но маржа ' + pct(m*100, 0) +
+          ' против ' + pct(P.margin*100, 0) + ' в среднем. Рост в нём тянет компанию вниз.'});
+    }
+  }
+  var fotR = P.rev > 0 ? P.team.total/P.rev : 0;
+  if (fotR > 0.2){
+    out.push({k: fotR > 0.25 ? 'neg' : 'warn', t:'ФОТ ' + pct(fotR*100, 0) + ' от выручки',
+      d:'Норма 10-18%. Каждые 100 ₽ выручки несут ' + fmt(fotR*100, 0) + ' ₽ зарплат. Проверьте каждую должность во вкладке «Команда».'});
+  }
+  var othR = P.rev > 0 ? P.other/P.rev : 0;
+  if (othR > 0.25){
+    out.push({k:'warn', t:'Прочие постоянные ' + pct(othR*100, 0) + ' от выручки',
+      d:'Аренда, проценты, разработка. Пока выручка не выросла, эти расходы не размываются — их надо резать напрямую.'});
+  }
+  if (P.profit < 0 && P.margin > 0.12){
+    out.push({k:'warn', t:'Проблема не в цене, а в объёме и постоянных расходах',
+      d:'Маржа ' + pct(P.margin*100, 0) + ' — рабочая. При такой марже убыток даёт не товар, а недобор выручки на покрытие постоянных расходов.'});
+  }
+  if (P.profit < 0 && P.margin > 0 && P.margin < 0.10){
+    out.push({k:'neg', t:'Маржа слишком тонкая',
+      d:'При ' + pct(P.margin*100, 0) + ' маржи компания не выживет даже при росте продаж. Сначала цена и закупка.'});
+  }
+  if (!out.length){
+    out.push({k:'ok', t:'Явных провалов нет', d:'Маржа в норме, расходы под контролем.'});
+  }
+  return out.map(function(d){
+    return '<div class="diag ' + (d.k === 'ok' ? 'ok' : (d.k === 'warn' ? 'warn' : '')) + '"><b>' +
+      d.t + '</b>' + d.d + '</div>';
+  }).join('');
+}
+
+function refreshGrowth(P){
+  var box = document.getElementById('growth-res');
+  if (!box) return;
+  var cnt = num(S.growth.cnt), cm3 = num(S.growth.cm3), units = num(S.growth.units), extra = num(S.growth.extra);
+  var add = cnt * cm3 * units;
+  var net = add - extra;
+  var after = P.profit + net;
+  var cls = net >= 0 ? 'pos' : 'neg';
+  var verdict = net >= 0
+    ? 'Расширение даёт плюс ' + money(net) + ' в месяц. Условие: маржа на единицу положительная и держится.'
+    : 'Расширение увеличит убыток на ' + money(-net) + ' в месяц. Новые товары не окупят расходы на них.';
+  box.innerHTML =
+    '<div class="kv"><span>Прибавка маржи</span><b class="pos">+' + money(add) + '</b></div>' +
+    '<div class="kv"><span>Доп. постоянные расходы</span><b class="neg">−' + money(extra) + '</b></div>' +
+    '<div class="kv total"><span>Изменение прибыли</span><b class="' + cls + '">' + signed(net) + '</b></div>' +
+    '<div class="kv"><span>Прибыль была → станет</span><b class="' + (after < 0 ? 'neg' : 'pos') + '">' + signed(P.profit) + ' → ' + signed(after) + '</b></div>' +
+    '<div class="diag ' + (net >= 0 ? 'ok' : '') + '" style="margin-top:9px"><b>' + (net >= 0 ? 'Можно расширять' : 'Расширение ухудшит результат') + '</b>' + verdict + '</div>' +
+    (cm3 <= 0 ? '<div class="diag" style="margin-top:6px"><b>Маржа на единицу ≤ 0</b>При отрицательной марже каждый новый SKU добавляет убыток. Сначала выведите в плюс то, что уже есть.</div>' : '');
+}
+
+/* ---------- события ---------- */
+function setBind(path, val){
+  var p = path.split(':');
+  if (p[0] === 'ch'){ if (S.ch[p[1]]) S.ch[p[1]][p[2]] = val; }
+  else if (p[0] === 'fee'){ S.fee[p[1]] = val; }
+  else if (p[0] === 'sku'){
+    var sku = null;
+    S.skus.forEach(function(s){ if (String(s.id) === p[1]) sku = s; });
+    if (!sku) return;
+    if (p.length === 3){ sku[p[2]] = val; }
+    else {
+      if (!sku.p[p[2]]) sku.p[p[2]] = {p:'', u:''};
+      sku.p[p[2]][p[3]] = val;
+    }
+  }
+  else if (p[0] === 'emp'){
+    S.team.forEach(function(e){ if (String(e.id) === p[1]) e[p[2]] = val; });
+  }
+  else if (p[0] === 'other'){
+    S.other.forEach(function(o){ if (String(o.id) === p[1]) o[p[2]] = val; });
+  }
+  else if (p[0] === 'misc'){ S[p[1]] = val; }
+  else if (p[0] === 'growth'){ S.growth[p[1]] = val; }
+}
+
+function onEdit(ev){
+  var el = ev.target;
+  if (!el || !el.getAttribute) return;
+  var bind = el.getAttribute('data-bind');
+  if (!bind) return;
+  setBind(bind, el.value);
+  save();
+  refresh();
+}
+
+function onClick(ev){
+  var t = ev.target;
+  while (t && t !== document && !(t.getAttribute && t.getAttribute('data-act'))) t = t.parentNode;
+  if (!t || t === document) return;
+  var act = t.getAttribute('data-act');
+
+  if (act === 'tab'){
+    S.tab = t.getAttribute('data-tab');
+    save(); render();
+  } else if (act === 'addSku'){
+    S.skus.push({id:nextId(), name:'Новый товар', cogs:'', pack:'',
+      p:{mp:{p:'',u:''}, site:{p:'',u:''}, opt:{p:'',u:''}, net:{p:'',u:''}}});
+    save(); render();
+  } else if (act === 'delSku'){
+    var id = t.getAttribute('data-id');
+    S.skus = S.skus.filter(function(s){ return String(s.id) !== id; });
+    save(); render();
+  } else if (act === 'addEmp'){
+    S.team.push({id:nextId(), role:'Новая должность', salary:'', tax:'30', qty:'1', dept:'shared', type:'support'});
+    save(); render();
+  } else if (act === 'delEmp'){
+    var id2 = t.getAttribute('data-id');
+    S.team = S.team.filter(function(e){ return String(e.id) !== id2; });
+    save(); render();
+  } else if (act === 'addOther'){
+    S.other.push({id:nextId(), name:'Новая строка', sum:''});
+    save(); render();
+  } else if (act === 'delOther'){
+    var id3 = t.getAttribute('data-id');
+    S.other = S.other.filter(function(o){ return String(o.id) !== id3; });
+    save(); render();
+  } else if (act === 'reset'){
+    if (confirm('Сбросить все данные и вернуть пример?')){
+      S = seed(); save(); render();
+    }
+  }
+}
+
+/* ---------- рендер ---------- */
+function render(){
+  if (!S.tab) S.tab = 'skus';
+  renderTabs();
+  if (S.tab === 'skus') renderSkus();
+  else if (S.tab === 'chans') renderChans();
+  else if (S.tab === 'team') renderTeam();
+  else if (S.tab === 'pl') renderPL();
+  else renderGrowth();
+  refresh();
+}
+
+function syncUid(){
+  var mx = 100;
+  S.skus.forEach(function(x){ mx = Math.max(mx, +x.id || 0); });
+  S.team.forEach(function(x){ mx = Math.max(mx, +x.id || 0); });
+  S.other.forEach(function(x){ mx = Math.max(mx, +x.id || 0); });
+  uid = mx;
+}
+
+syncUid();
+document.addEventListener('input', onEdit);
+document.addEventListener('change', onEdit);
+document.addEventListener('click', onClick);
+render();
+
+})();
+</script>
+</body>
+</html>
