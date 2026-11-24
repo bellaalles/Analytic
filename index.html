@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#0a1730" />
+  <title>ProfitScope — юнит-экономика СТМ</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">P</span><span>ProfitScope</span><small>СТМ · косметика</small></div>
+    <div class="header-actions"><button id="exportBtn" class="ghost">Экспорт JSON</button><label class="ghost file-label">Импорт JSON<input id="importFile" type="file" accept="application/json" hidden></label><button id="resetBtn" class="ghost">Сбросить пример</button></div>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <div><p class="eyebrow">ОПЕРАЦИОННАЯ ПРИБЫЛЬ, А НЕ ОБОРОТ</p><h1>Юнит-экономика<br>без самообмана</h1><p class="muted">Рассчитывайте реальную прибыль SKU × канала с учётом скидок, маркетплейса, рекламы, возвратов, налогов и капитала в запасах.</p></div>
+      <div class="scenario"><span>Стресс-сценарий</span><div class="segmented"><button data-scenario="base" class="selected">База</button><button data-scenario="stress">Стресс</button></div><small id="scenarioHint">Текущие фактические условия</small></div>
+    </section>
+    <nav class="tabs" aria-label="Разделы"><button class="tab active" data-view="dashboard">Панель</button><button class="tab" data-view="data">Ввод данных</button><button class="tab" data-view="method">Логика модели</button></nav>
+    <section id="dashboard" class="view active">
+      <div id="alertBox" class="alert"></div>
+      <div id="kpis" class="kpi-grid"></div>
+      <div class="grid-2"><article class="panel"><div class="panel-head"><div><p class="label">КАНАЛЫ ПРОДАЖ</p><h2>Где остаются деньги</h2></div><span class="pill">за месяц</span></div><div id="channelBars" class="bars"></div></article><article class="panel"><div class="panel-head"><div><p class="label">ДЕНЕЖНЫЙ ЦИКЛ</p><h2>Запасы и кассовый разрыв</h2></div></div><div id="cashCycle" class="cash-cycle"></div></article></div>
+      <article class="panel table-panel"><div class="panel-head"><div><p class="label">ЮНИТ-ЭКОНОМИКА</p><h2>SKU × канал</h2></div><span class="legend"><i></i> убыточная строка</span></div><div class="table-wrap"><table><thead><tr><th>SKU / канал</th><th>Нетто-цена</th><th>Переменные / шт.</th><th>Вклад / шт.</th><th>Маржа</th><th>Вклад / мес.</th><th>Действие</th></tr></thead><tbody id="unitTable"></tbody></table></div></article>
+    </section>
+    <section id="data" class="view">
+      <div class="data-intro"><div><p class="eyebrow">ИСТОЧНИК РАСЧЁТА</p><h2>Редактируйте фактические условия</h2><p class="muted">Изменения сохраняются только в этом браузере. Для резервной копии используйте экспорт JSON.</p></div><button id="addLine" class="primary">Добавить строку</button></div>
+      <article class="panel input-panel"><div class="panel-head"><div><p class="label">ОБЩИЕ ПАРАМЕТРЫ</p><h2>Налоги и денежный цикл</h2></div></div><div class="meta-grid" id="metaInputs"></div></article>
+      <article class="panel input-panel"><div class="panel-head"><div><p class="label">СТРОКИ ПРОДАЖ</p><h2>SKU × канал</h2></div><span class="pill amber">все суммы в ₽</span></div><div class="table-wrap editable"><table><thead><tr><th>SKU</th><th>Канал</th><th>Шт./мес.</th><th>Цена</th><th>Скидка</th><th>Себест.</th><th>Комиссия</th><th>Логистика</th><th>Реклама</th><th>Возвраты</th><th>Фикс. канал</th><th></th></tr></thead><tbody id="editTable"></tbody></table></div></article>
+      <p class="fineprint">Полная детализация на строку: цена до скидки, скидка, комиссия, эквайринг, доставка, последняя миля, хранение, реклама, промо, возвраты, себестоимость и фиксированные расходы канала. Налог задаётся в общих параметрах.</p>
+    </section>
+    <section id="method" class="view"><article class="method-card"><p class="eyebrow">ПРОЗРАЧНАЯ МЕТОДИКА</p><h2>Что именно считает ProfitScope</h2><div class="method-grid"><div><h3>1. Выручка</h3><p>Количество × цена после скидки. Не используем «цену на витрине» как доход.</p></div><div><h3>2. Вклад на единицу</h3><p>Нетто-цена минус налог, комиссия, платёжные расходы, логистика, реклама, возвраты и полная себестоимость.</p></div><div><h3>3. Операционная прибыль</h3><p>Сумма вкладов всех строк минус фиксированные расходы канала и компании.</p></div><div><h3>4. Точка безубыточности</h3><p>Постоянные расходы ÷ маржа вклада. Показывает выручку, нужную для нулевой прибыли.</p></div><div><h3>5. Деньги в запасе</h3><p>Оценка производственного капитала в запасе и cash conversion cycle по заданным дням.</p></div><div><h3>6. Стресс</h3><p>Проверяет, что будет при снижении объёма на 15%, росте рекламы на 20% и дополнительной скидке 5 п.п.</p></div></div></article></section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>
