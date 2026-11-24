@@ -445,6 +445,13 @@ function renderPL(){
   h += '<div class="card" id="pl-recon"><h2>Сверка с фактом</h2>' + reconInput() + '<div id="recon-out" style="margin-top:8px"></div></div>';
   h += '<div class="card" id="pl-diag"></div>';
   h += '<div class="card" id="pl-bep"></div>';
+  h += '<div class="card"><h2>Передать данные на разбор</h2>' +
+       '<p class="small muted" style="margin:0 0 10px">Скачайте файл и отправьте его в Telegram. Внутри все товары, каналы, команда и расходы — этого достаточно для полного разбора и плана развития.</p>' +
+       '<div class="btns" style="margin:0 0 8px"><button class="primary" data-act="exportJson">Скачать файл данных</button></div>' +
+       '<div class="btns" style="margin:0"><button data-act="exportCsv" style="flex:1">Таблица для Excel</button>' +
+       '<button data-act="importJson">Загрузить файл</button></div>' +
+       '<input type="file" id="importFile" accept=".json,application/json" style="display:none">' +
+       '<p class="small muted" style="margin:10px 0 0">К файлу приложите выгрузки «Отчёт о реализации» из WB и Ozon за 3-6 месяцев — тогда расчёт сверим с фактом.</p></div>';
   h += '<div class="card"><h2>Прочие постоянные расходы</h2><div id="other-list"></div>' +
        '<div class="btns" style="margin-bottom:2px"><button class="tiny" data-act="addOther">+ Добавить строку</button></div></div>';
   document.getElementById('view').innerHTML = h;
@@ -801,6 +808,144 @@ function refreshGrowth(P){
     (cm3 <= 0 ? '<div class="diag" style="margin-top:6px"><b>Маржа на единицу ≤ 0</b>При отрицательной марже каждый новый SKU добавляет убыток. Сначала выведите в плюс то, что уже есть.</div>' : '');
 }
 
+/* ---------- выгрузка и загрузка данных ---------- */
+function toast(msg){
+  var t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#0f172a;' +
+    'color:#fff;padding:11px 16px;border-radius:10px;font-size:13.5px;z-index:99;' +
+    'box-shadow:0 6px 24px rgba(0,0,0,.28);max-width:88vw;text-align:center';
+  document.body.appendChild(t);
+  setTimeout(function(){ if (t.parentNode) t.parentNode.removeChild(t); }, 2800);
+}
+
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function download(name, text, mime){
+  var blob = new Blob([text], {type: mime});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){
+    URL.revokeObjectURL(url);
+    if (a.parentNode) a.parentNode.removeChild(a);
+  }, 1500);
+}
+
+function buildJson(){
+  var P = pl(), cp = channelPL(P);
+  var channels = {};
+  CHANNELS.forEach(function(c){
+    var d = cp[c.id];
+    channels[c.id] = {
+      name: c.name,
+      revenue: Math.round(d.rev),
+      cm3: Math.round(d.cm3),
+      marginPct: d.rev > 0 ? +(d.cm3/d.rev*100).toFixed(2) : 0,
+      units: d.units,
+      directPayroll: Math.round(d.direct),
+      allocatedPayroll: Math.round(d.allocFot),
+      allocatedOther: Math.round(d.allocOther),
+      channelFee: Math.round(d.fee),
+      channelProfit: Math.round(d.profit)
+    };
+  });
+  var team = S.team.map(function(e){
+    return {role:e.role, dept:e.dept, type:e.type, qty:num(e.qty),
+      salary:num(e.salary), taxPct:num(e.tax), monthlyCost:Math.round(teamCost(e))};
+  });
+  return JSON.stringify({
+    app: 'stm-unit-economics',
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    summary: {
+      revenue: Math.round(P.rev),
+      cm3: Math.round(P.cm3),
+      marginPct: +(P.margin*100).toFixed(2),
+      payroll: Math.round(P.team.total),
+      payrollPctOfRevenue: P.rev > 0 ? +(P.team.total/P.rev*100).toFixed(2) : 0,
+      otherFixed: Math.round(P.other),
+      channelFees: Math.round(P.fees),
+      profit: Math.round(P.profit),
+      factFromAccounting: num(S.fact),
+      breakEvenRevenue: P.margin > 0 ? Math.round(P.fixed/P.margin) : null
+    },
+    channels: channels,
+    team: team,
+    data: S
+  }, null, 2);
+}
+
+function csvCell(v){
+  var s = String(v == null ? '' : v);
+  return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function numRu(n){
+  return (Math.round(n*100)/100).toString().replace('.', ',');
+}
+
+function buildCsv(){
+  var head = ['Товар','Канал','Цена','Шт в месяц','Выручка','Комиссия','Логистика','Хранение',
+    'Возвраты','Ретро-бонус','Штрафы','Реклама','Эквайринг','Налог','Закупка и упаковка',
+    'Маржа на единицу','Маржа %','Маржа за месяц'];
+  var rows = [head.join(';')];
+  S.skus.forEach(function(sku){
+    CHANNELS.forEach(function(c){
+      var u = unit(sku, c.id);
+      if (!u) return;
+      var by = {comm:0, log:0, stor:0, ret:0, bonus:0, fines:0, ads:0, acq:0, tax:0};
+      u.br.forEach(function(b){ by[b.cat] = (by[b.cat] || 0) + b.amount; });
+      rows.push([sku.name, c.name, numRu(u.price), numRu(u.units), numRu(u.revenue),
+        numRu(by.comm), numRu(by.log), numRu(by.stor), numRu(by.ret), numRu(by.bonus),
+        numRu(by.fines), numRu(by.ads), numRu(by.acq), numRu(by.tax), numRu(u.cogs),
+        numRu(u.cm3), numRu(u.pct*100), numRu(u.month)].map(csvCell).join(';'));
+    });
+  });
+  rows.push('');
+  rows.push(['Должность','Направление','Тип','Человек','Оклад','Взносы %','Стоимость в месяц'].join(';'));
+  S.team.forEach(function(e){
+    rows.push([e.role, deptName(e.dept), (TYPES.filter(function(t){ return t.id === e.type; })[0] || {}).n || e.type,
+      numRu(num(e.qty)), numRu(num(e.salary)), numRu(num(e.tax)), numRu(teamCost(e))].map(csvCell).join(';'));
+  });
+  rows.push('');
+  rows.push(['Прочие постоянные расходы','Сумма'].join(';'));
+  S.other.forEach(function(o){ rows.push([o.name, numRu(num(o.sum))].map(csvCell).join(';')); });
+  return '\ufeff' + rows.join('\r\n');
+}
+
+function handleImport(file){
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(){
+    try {
+      var parsed = JSON.parse(String(reader.result));
+      var data = parsed && parsed.data ? parsed.data : parsed;
+      if (!data || !data.skus || !data.team) throw new Error('это не файл калькулятора');
+      S = data;
+      if (!S.ch) throw new Error('нет данных по каналам');
+      if (!S.fee) S.fee = {mp:'0', site:'0', opt:'0', net:'0'};
+      if (!S.growth) S.growth = {cnt:'5', cm3:'150', units:'300', extra:'250000'};
+      if (S.fact === undefined) S.fact = '0';
+      if (!S.tab) S.tab = 'skus';
+      if (!S.other) S.other = [];
+      syncUid();
+      save();
+      render();
+      toast('Данные загружены');
+    } catch (e) {
+      toast('Не удалось прочитать файл: ' + e.message);
+    }
+  };
+  reader.onerror = function(){ toast('Не удалось прочитать файл'); };
+  reader.readAsText(file);
+}
+
 /* ---------- события ---------- */
 function setBind(path, val){
   var p = path.split(':');
@@ -867,6 +1012,15 @@ function onClick(ev){
     var id3 = t.getAttribute('data-id');
     S.other = S.other.filter(function(o){ return String(o.id) !== id3; });
     save(); render();
+  } else if (act === 'exportJson'){
+    download('stm-dannye-' + todayStr() + '.json', buildJson(), 'application/json');
+    toast('Файл сохранён. Отправьте его в Telegram.');
+  } else if (act === 'exportCsv'){
+    download('stm-tablica-' + todayStr() + '.csv', buildCsv(), 'text/csv;charset=utf-8');
+    toast('Таблица сохранена. Открывается в Excel.');
+  } else if (act === 'importJson'){
+    var fi = document.getElementById('importFile');
+    if (fi) fi.click();
   } else if (act === 'reset'){
     if (confirm('Сбросить все данные и вернуть пример?')){
       S = seed(); save(); render();
@@ -898,6 +1052,9 @@ syncUid();
 document.addEventListener('input', onEdit);
 document.addEventListener('change', onEdit);
 document.addEventListener('click', onClick);
+document.addEventListener('change', function(ev){
+  if (ev.target && ev.target.id === 'importFile') handleImport(ev.target.files && ev.target.files[0]);
+});
 render();
 
 })();
